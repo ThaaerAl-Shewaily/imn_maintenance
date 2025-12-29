@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>نظام أرشيف الصيانة - شبكة الإعلام العراقي</title>
+    <style>
+        :root { --main: #1a3a5f; --accent: #27ae60; --danger: #e74c3c; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Sidebar */
+        .sidebar { width: 380px; background: white; border-left: 1px solid #ddd; display: flex; flex-direction: column; box-shadow: 2px 0 10px rgba(0,0,0,0.05); }
+        .sidebar-header { padding: 20px; background: var(--main); color: white; text-align: center; }
+        .search-area { padding: 15px; border-bottom: 1px solid #eee; }
+        .search-input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        .report-list { flex: 1; overflow-y: auto; padding: 10px; }
+        .report-card { background: #fff; border: 1px solid #eee; padding: 12px; margin-bottom: 10px; border-radius: 8px; cursor: pointer; transition: 0.2s; position: relative; }
+        .report-card:hover { border-right: 6px solid var(--main); background: #fcfcfc; }
+        .card-actions { margin-top: 10px; display: flex; gap: 8px; }
+
+        /* Main Workspace */
+        .main-content { flex: 1; padding: 30px; overflow-y: auto; display: flex; flex-direction: column; align-items: center; }
+        .form-container { background: white; padding: 30px; border-radius: 12px; width: 100%; max-width: 800px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        
+        .field-group { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 15px; }
+        label { font-weight: bold; display: block; margin-bottom: 8px; color: var(--main); }
+        select, input, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-family: inherit; font-size: 14px; }
+        
+        .checkbox-container { border: 1px solid #eee; padding: 15px; background: #fafafa; border-radius: 8px; max-height: 200px; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .check-item { display: flex; align-items: center; font-size: 13px; }
+        .check-item input { width: auto; margin-left: 8px; cursor: pointer; }
+
+        .btn { padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; transition: 0.3s; }
+        .btn-save { background: var(--accent); width: 100%; font-size: 16px; margin-top: 15px; }
+        .btn-del { background: var(--danger); font-size: 11px; }
+        .btn-edit { background: #f39c12; font-size: 11px; }
+
+        /* Print Style */
+        #printable { display: none; background: white; width: 210mm; min-height: 297mm; padding: 20mm; box-sizing: border-box; }
+        .p-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 15px; }
+        
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; display: block; overflow: visible; }
+            #printable { display: block !important; position: absolute; top: 0; left: 0; width: 100%; }
+            @page { size: A4; margin: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar no-print">
+        <div class="sidebar-header">
+            <h3 style="margin:0">أرشيف الصيانة - IMN</h3>
+            <small>مديرية تكنولوجيا المعلومات</small>
+        </div>
+        <div class="search-area">
+            <input type="text" class="search-input" id="searchInput" onkeyup="renderArchive()" placeholder="ابحث باسم المديرية أو الفني...">
+            <button class="btn btn-save" style="margin-top:10px; font-size:12px; padding:8px" onclick="resetForm()">+ إضافة تقرير جديد</button>
+        </div>
+        <div class="report-list" id="archiveList"></div>
+    </div>
+
+    <div class="main-content no-print">
+        <div class="form-container">
+            <h2 id="formTitle" style="color:var(--main); text-align:center; margin-top:0">تفاصيل المهمة التقنية</h2>
+            <input type="hidden" id="reportId">
+            
+            <div class="field-group">
+                <div>
+                    <label>الجهة المستفيدة:</label>
+                    <select id="dept">
+                        <option value="">-- اختر الجهة --</option>
+                        <optgroup label="قطاع المرئي والمسموع">
+                            <option>مديرية قناة العراقية</option>
+                            <option>مديرية قناة الإخبارية</option>
+                            <option>مديرية قناة الرياضية</option>
+                            <option>مديرية إذاعة جمهورية العراق</option>
+                        </optgroup>
+                        <optgroup label="قطاعات أخرى">
+                            <option>مديرية وكالة الأنباء (واع)</option>
+                            <option>مديرية جريدة الصباح</option>
+                            <option>مديرية تكنولوجيا المعلومات</option>
+                            <option>مديرية الأرشيف الوطني</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div>
+                    <label>اسم الفني القائم بالعمل:</label>
+                    <input type="text" id="technician" placeholder="اسم المهندس أو الفني">
+                </div>
+            </div>
+
+            <div class="field-group">
+                <div>
+                    <label>الرقم التسلسلي للجهاز (S/N):</label>
+                    <input type="text" id="serial" placeholder="أدخل رقم الجهاز">
+                </div>
+                <div>
+                    <label>نوع الجهاز:</label>
+                    <select id="deviceType" onchange="loadOptions()">
+                        <option value="">-- اختر الجهاز --</option>
+                        <option value="pc">حاسبة (Desktop/Laptop)</option>
+                        <option value="printer">طابعة / سكنر</option>
+                        <option value="network">تجهيزات شبكة</option>
+                    </select>
+                </div>
+            </div>
+
+            <label>الأعطال والتشخيص:</label>
+            <div id="probBox" class="checkbox-container"></div>
+            <br>
+            <label>الإجراءات المنجزة والحلول:</label>
+            <div id="actBox" class="checkbox-container"></div>
+
+            <button class="btn btn-save" id="saveBtn" onclick="saveToDB()">حفظ في الأرشيف المحلي</button>
+        </div>
+    </div>
+
+    <div id="printable">
+        <div class="p-header">
+            <div style="text-align:right; line-height:1.6">
+                <strong>شبكة الإعلام العراقي</strong><br>
+                مديرية تكنولوجيا المعلومات<br>
+                قسم الصيانة والدعم الفني
+            </div>
+            <img src="logo.png" alt="Logo" style="width:100px; height:100px; object-fit:contain" onerror="this.style.display='none'">
+        </div>
+        <h2 style="text-align:center; border:2px solid #000; padding:10px; margin:25px 0; background:#f2f2f2">تقرير صيانة وإنجاز عمل فني</h2>
+        
+        <table style="width:100%; border-collapse:collapse; margin-bottom:20px">
+            <tr>
+                <td style="border:1px solid #000; padding:10px; width:50%"><strong>الجهة المستفيدة:</strong> <span id="v_dept"></span></td>
+                <td style="border:1px solid #000; padding:10px;"><strong>التاريخ:</strong> <span id="v_date"></span></td>
+            </tr>
+            <tr>
+                <td style="border:1px solid #000; padding:10px;"><strong>الرقم التسلسلي:</strong> <span id="v_serial"></span></td>
+                <td style="border:1px solid #000; padding:10px;"><strong>الفني المختص:</strong> <span id="v_tech"></span></td>
+            </tr>
+        </table>
+
+        <h4>أولاً: الأعطال التي تم تشخيصها:</h4>
+        <div id="v_prob" style="border:1px solid #eee; padding:15px; min-height:80px; line-height:1.8"></div>
+
+        <h4>ثانياً: المعالجة التقنية والحلول المطبقة:</h4>
+        <div id="v_act" style="border:1px solid #eee; padding:15px; min-height:150px; line-height:1.8"></div>
+
+        <div style="margin-top:80px; display:flex; justify-content:space-between; font-weight:bold; text-align:center">
+            <div style="border-top:1px solid #000; width:30%">توقيع الفني<br><small id="v_tech_footer"></small></div>
+            <div style="border-top:1px solid #000; width:30%">مسؤول الشعبة</div>
+            <div style="border-top:1px solid #000; width:30%">توقيع المستلم</div>
+        </div>
+    </div>
+
+    <script>
+        let db;
+        const req = indexedDB.open("IMN_Maintenance_Final_V2", 1);
+        req.onupgradeneeded = e => { e.target.result.createObjectStore("reports", { keyPath: "id", autoIncrement: true }); };
+        req.onsuccess = e => { db = e.target.result; renderArchive(); };
+
+        const optionsBank = {
+            pc: {
+                p: ["عطل اللوحة الام", "عطل الرام", "عطل الهارد دسك (HDD/SSD)", "تلف البطارية", "انهيار الويندوز", "إصابة بفايروسات"],
+                a: ["استبدال HDD بـ SSD", "إضافة SSD", "إعادة تهيئة (Format)", "تثبيت ويندوز أصلية", "تنصيب البرامج الأساسية", "تثبيت التعاريف"]
+            },
+            printer: {
+                p: ["حشر ورق", "بهتان الحبر", "عطل الفيوزر", "تعذر التعريف"],
+                a: ["تنظيف البكرات", "تبديل الحبر", "تبديل الفيوزر", "تعريف عبر الشبكة"]
+            },
+            network: {
+                p: ["انقطاع الكابل", "ضعف الإشارة", "تعارض IP"],
+                a: ["إعادة كبس RJ45", "ضبط إعدادات النانو", "تغيير الكابل"]
+            }
+        };
+
+        function loadOptions() {
+            const type = document.getElementById('deviceType').value;
+            const pBox = document.getElementById('probBox');
+            const aBox = document.getElementById('actBox');
+            pBox.innerHTML = ''; aBox.innerHTML = '';
+            if(optionsBank[type]) {
+                optionsBank[type].p.forEach(v => pBox.innerHTML += `<div class="check-item"><input type="checkbox" name="probs" value="${v}">${v}</div>`);
+                optionsBank[type].a.forEach(v => aBox.innerHTML += `<div class="check-item"><input type="checkbox" name="acts" value="${v}">${v}</div>`);
+            }
+        }
+
+        function saveToDB() {
+            const id = document.getElementById('reportId').value;
+            const probs = Array.from(document.querySelectorAll('input[name="probs"]:checked')).map(c => c.value);
+            const acts = Array.from(document.querySelectorAll('input[name="acts"]:checked')).map(c => c.value);
+            
+            const data = {
+                dept: document.getElementById('dept').value,
+                tech: document.getElementById('technician').value,
+                serial: document.getElementById('serial').value,
+                type: document.getElementById('deviceType').value,
+                probs: probs.join(" - "),
+                acts: acts.join(" - "),
+                date: new Date().toLocaleDateString('ar-EG')
+            };
+
+            const tx = db.transaction("reports", "readwrite");
+            const store = tx.objectStore("reports");
+            if(id) { data.id = parseInt(id); store.put(data); } else { store.add(data); }
+            tx.oncomplete = () => { resetForm(); renderArchive(); alert("تم حفظ التقرير بنجاح"); };
+        }
+
+        function renderArchive() {
+            const list = document.getElementById('archiveList');
+            const term = document.getElementById('searchInput').value.toLowerCase();
+            list.innerHTML = '';
+            db.transaction("reports").objectStore("reports").getAll().onsuccess = e => {
+                e.target.result.reverse().forEach(r => {
+                    if(r.dept.toLowerCase().includes(term) || r.tech.toLowerCase().includes(term)) {
+                        list.innerHTML += `
+                        <div class="report-card">
+                            <strong>${r.dept}</strong><br><small>الفني: ${r.tech} | ${r.date}</small>
+                            <div class="card-actions no-print">
+                                <button class="btn btn-edit" onclick="editReport(${r.id})">تعديل</button>
+                                <button class="btn btn-del" onclick="deleteReport(${r.id})">حذف</button>
+                                <button class="btn" style="background:var(--main); font-size:11px" onclick="printReport(${r.id})">طباعة</button>
+                            </div>
+                        </div>`;
+                    }
+                });
+            };
+        }
+
+        function editReport(id) {
+            db.transaction("reports").objectStore("reports").get(id).onsuccess = e => {
+                const r = e.target.result;
+                document.getElementById('reportId').value = r.id;
+                document.getElementById('dept').value = r.dept;
+                document.getElementById('technician').value = r.tech;
+                document.getElementById('serial').value = r.serial;
+                document.getElementById('deviceType').value = r.type;
+                loadOptions();
+                document.getElementById('formTitle').innerText = "تعديل تقرير: " + r.dept;
+                document.getElementById('saveBtn').innerText = "تحديث البيانات";
+            };
+        }
+
+        function deleteReport(id) {
+            if(confirm("هل أنت متأكد من الحذف؟")) {
+                db.transaction("reports", "readwrite").objectStore("reports").delete(id).onsuccess = renderArchive;
+            }
+        }
+
+        function printReport(id) {
+            db.transaction("reports").objectStore("reports").get(id).onsuccess = e => {
+                const r = e.target.result;
+                document.getElementById('v_dept').innerText = r.dept;
+                document.getElementById('v_serial').innerText = r.serial;
+                document.getElementById('v_date').innerText = r.date;
+                document.getElementById('v_tech').innerText = r.tech;
+                document.getElementById('v_tech_footer').innerText = r.tech;
+                document.getElementById('v_prob').innerText = r.probs;
+                document.getElementById('v_act').innerText = r.acts;
+                window.print();
+            };
+        }
+
+        function resetForm() {
+            document.getElementById('reportId').value = '';
+            document.querySelectorAll('input, select').forEach(i => i.value = '');
+            document.getElementById('probBox').innerHTML = '';
+            document.getElementById('actBox').innerHTML = '';
+            document.getElementById('formTitle').innerText = "تفاصيل المهمة التقنية";
+            document.getElementById('saveBtn').innerText = "حفظ التقرير في الأرشيف المحلي";
+        }
+    </script>
+</body>
+</html>
