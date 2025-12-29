@@ -2,150 +2,51 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>نظام أرشيف الصيانة الذكي - IMN</title>
+    <title>نظام أرشيف صيانة IMN الشامل</title>
     <style>
         :root {
-            --primary: #2563eb;
-            --secondary: #64748b;
-            --dark: #0f172a;
-            --success: #22c55e;
-            --danger: #ef4444;
-            --bg: #f8fafc;
-            --sidebar-bg: #1e293b;
+            --primary: #1e293b;
+            --accent: #2563eb;
+            --bg: #f1f5f9;
         }
 
-        body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background: var(--bg);
-            margin: 0;
-            display: flex;
-            height: 100vh;
-            color: var(--dark);
-        }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
 
-        /* Sidebar Styling */
-        .sidebar {
-            width: 360px;
-            background: var(--sidebar-bg);
-            color: white;
-            display: flex;
-            flex-direction: column;
-            transition: all 0.3s ease;
-        }
-
-        .sidebar-header {
-            padding: 30px 20px;
-            text-align: center;
-            background: rgba(0,0,0,0.2);
-        }
-
-        .sidebar-header h2 { margin: 0; font-size: 20px; letter-spacing: 1px; }
-
-        .search-area { padding: 20px; }
-        .search-input {
-            width: 100%;
-            padding: 12px;
-            border-radius: 10px;
-            border: none;
-            background: rgba(255,255,255,0.1);
-            color: white;
-            outline: none;
-        }
-        .search-input::placeholder { color: #94a3b8; }
-
+        /* Sidebar */
+        .sidebar { width: 380px; background: var(--primary); color: white; display: flex; flex-direction: column; box-shadow: 4px 0 10px rgba(0,0,0,0.1); }
+        .sidebar-header { padding: 25px; background: rgba(0,0,0,0.2); text-align: center; }
+        .search-area { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .search-input { width: 100%; padding: 12px; border-radius: 8px; border: none; background: rgba(255,255,255,0.1); color: white; outline: none; }
         .report-list { flex: 1; overflow-y: auto; padding: 15px; }
-        .report-card {
-            background: rgba(255,255,255,0.05);
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 12px;
-            cursor: pointer;
-            transition: 0.3s;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        .report-card:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); }
-        .report-card strong { color: #f1f5f9; display: block; margin-bottom: 5px; }
-        .report-card small { color: #94a3b8; }
+        .report-card { background: rgba(255,255,255,0.05); border-radius: 10px; padding: 15px; margin-bottom: 12px; cursor: pointer; transition: 0.3s; border: 1px solid rgba(255,255,255,0.1); }
+        .report-card:hover { background: rgba(255,255,255,0.15); transform: translateX(-5px); }
 
         /* Main Workspace */
-        .main-content {
-            flex: 1;
-            padding: 40px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .form-container {
-            background: white;
-            width: 100%;
-            max-width: 850px;
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-        }
-
-        .section-title {
-            font-size: 24px;
-            font-weight: bold;
-            color: var(--dark);
-            margin-bottom: 30px;
-            border-right: 5px solid var(--primary);
-            padding-right: 15px;
-        }
-
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--secondary); font-size: 14px; }
+        .main-content { flex: 1; padding: 30px; overflow-y: auto; display: flex; justify-content: center; }
+        .form-container { background: white; width: 100%; max-width: 900px; padding: 35px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .field { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #475569; }
+        select, input { width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-family: inherit; }
         
-        select, input, textarea {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            background: #fdfdfd;
-            font-size: 15px;
-            transition: 0.3s;
-            outline: none;
-        }
-        select:focus, input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        .checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0; max-height: 180px; overflow-y: auto; }
+        .check-item { display: flex; align-items: center; font-size: 12px; }
+        .check-item input { width: auto; margin-left: 8px; }
 
-        .checkbox-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            background: #f1f5f9;
-            padding: 20px;
-            border-radius: 12px;
-        }
-        .check-item { display: flex; align-items: center; font-size: 14px; cursor: pointer; }
-        .check-item input { width: auto; margin-left: 10px; transform: scale(1.2); }
+        .btn-save { background: var(--accent); color: white; border: none; padding: 15px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 15px; }
 
-        .btn {
-            padding: 14px 25px;
-            border: none;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.3s;
-            font-size: 16px;
-        }
-        .btn-primary { background: var(--primary); color: white; width: 100%; margin-top: 20px; }
-        .btn-primary:hover { background: #1d4ed8; transform: translateY(-2px); }
-
-        /* Print Design (A4) */
-        #printable { display: none; background: white; width: 210mm; padding: 20mm; }
-        .print-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--dark); padding-bottom: 20px; }
-        .print-table { width: 100%; border-collapse: collapse; margin: 30px 0; }
-        .print-table td { border: 1px solid #cbd5e1; padding: 15px; text-align: right; }
-        .print-section { margin-bottom: 30px; }
-        .print-section h4 { border-right: 4px solid var(--primary); padding-right: 10px; margin-bottom: 10px; }
-        .print-box { border: 1px solid #e2e8f0; padding: 15px; min-height: 100px; line-height: 1.8; }
-
+        /* الطباعة المزدوجة */
+        #print-wrapper { display: none; }
         @media print {
             .no-print { display: none !important; }
-            body { background: white; display: block; }
-            #printable { display: block !important; margin: 0; width: 100%; }
+            body { background: white; display: block; overflow: visible; }
+            #print-wrapper { display: flex; flex-direction: column; width: 210mm; height: 297mm; }
+            .printable-half { height: 50%; padding: 10mm 15mm; border: 1px dashed #000; box-sizing: border-box; position: relative; }
+            .p-header { display: flex; justify-content: space-between; align-items: center; }
+            .p-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
+            .p-table td { border: 1px solid #000; padding: 5px; text-align: right; }
+            .content-box { border: 1px solid #eee; padding: 5px; min-height: 40px; font-size: 10px; line-height: 1.4; }
+            .p-footer { display: flex; justify-content: space-between; font-weight: bold; font-size: 11px; margin-top: 15px; text-align: center; }
+            @page { size: A4; margin: 0; }
         }
     </style>
 </head>
@@ -153,121 +54,105 @@
 
     <div class="sidebar no-print">
         <div class="sidebar-header">
-            <h2>أرشيف الصيانة</h2>
-            <small style="opacity: 0.7">شبكة الإعلام العراقي</small>
+            <h2>أرشيف صيانة IMN الشامل</h2>
+            <small>نظام الطباعة المزدوجة</small>
         </div>
         <div class="search-area">
-            <input type="text" class="search-input" id="searchInput" onkeyup="renderArchive()" placeholder="ابحث في السجلات...">
-            <button class="btn btn-primary" style="margin-top: 15px; font-size: 13px; padding: 10px" onclick="resetForm()">+ كتابة تقرير جديد</button>
+            <input type="text" class="search-input" id="searchInput" onkeyup="renderArchive()" placeholder="بحث في السجلات...">
+            <button class="btn-save" style="margin-top:10px; padding:8px; font-size:11px" onclick="resetForm()">+ إضافة تقرير جديد</button>
         </div>
         <div class="report-list" id="archiveList"></div>
     </div>
 
     <div class="main-content no-print">
         <div class="form-container">
-            <div class="section-title" id="formTitle">إدخال مهمة تقنية</div>
+            <h3 id="formTitle" style="margin-top:0; color:var(--primary)">تفاصيل مهمة الصيانة</h3>
             <input type="hidden" id="reportId">
             
-            <div class="grid">
-                <div>
-                    <label>الجهة المستفيدة</label>
-                    <select id="dept">
-                        <option value="">اختر المديرية...</option>
-                        <option>مديرية قناة العراقية</option>
-                        <option>مديرية قناة الإخبارية</option>
-                        <option>مديرية إذاعة جمهورية العراق</option>
-                        <option>مديرية تكنولوجيا المعلومات</option>
-                        <option>مديرية الأرشيف الوطني</option>
-                        <option>مديرية جريدة الصباح</option>
-                    </select>
-                </div>
-                <div>
-                    <label>الفني القائم بالعمل</label>
-                    <input type="text" id="technician" placeholder="اسم المهندس المختص">
-                </div>
-            </div>
-
             <div class="field">
-                <label>نوع الجهاز</label>
-                <select id="deviceType" onchange="loadOptions()">
-                    <option value="">اختر الجهاز...</option>
-                    <option value="pc">حاسبة (Desktop/Laptop)</option>
-                    <option value="ups">جهاز خازن طاقة (UPS)</option>
-                    <option value="printer">طابعة / سكنر</option>
+                <label>الجهة المستفيدة (المديرية / القسم):</label>
+                <select id="dept">
+                    <option value="">-- اختر الجهة من القائمة --</option>
+                    <optgroup label="الدوائر المركزية والبحثية">
+                        <option>مديرية تكنولوجيا المعلومات</option>
+                        <option>مديرية التخطيط والإحصاء</option>
+                        <option>مديرية معهد التدريب الإعلامي</option>
+                        <option>مديرية مكتب رئيس الشبكة</option>
+                        <option>مديرية التدقيق والرقابة الداخلية</option>
+                    </optgroup>
+                    <optgroup label="قطاع الإعلام المرئي (التلفزيون)">
+                        <option>مديرية قناة العراقية العامة</option>
+                        <option>مديرية قناة العراقية الإخبارية</option>
+                        <option>مديرية قناة العراقية الرياضية</option>
+                        <option>مديرية الإعلام الوطني (الكردية/التركمانية)</option>
+                        <option>مديرية الإنتاج الوثائقي / الدرامي</option>
+                        <option>قسم الديكور / الأزياء والمكياج</option>
+                    </optgroup>
+                    <optgroup label="قطاع الإعلام المسموع والمقروء">
+                        <option>مديرية إذاعة جمهورية العراق</option>
+                        <option>مديرية راديو العراقية / الفرقان</option>
+                        <option>مديرية جريدة الصباح</option>
+                        <option>مديرية وكالة الأنباء العراقية (واع)</option>
+                        <option>مديرية الإعلام الإلكتروني</option>
+                    </optgroup>
+                    <optgroup label="القطاع الهندسي والإداري">
+                        <option>مديرية الشؤون الهندسية والاستوديوهات</option>
+                        <option>مديرية المشاريع والصيانة</option>
+                        <option>مديرية الأرشيف الوطني</option>
+                        <option>مديرية الشؤون الإدارية / المالية</option>
+                        <option>مديرية المطابع / الشؤون التجارية</option>
+                    </optgroup>
                 </select>
             </div>
 
             <div class="field">
-                <label>الأعطال والتشخيص</label>
-                <div id="probBox" class="checkbox-group"></div>
+                <label>نوع الجهاز:</label>
+                <select id="deviceType" onchange="loadOptions()">
+                    <option value="">-- اختر نوع الجهاز --</option>
+                    <option value="pc">حاسبة (Desktop / Laptop)</option>
+                    <option value="printer">طابعة / سكنر / فاكس</option>
+                    <option value="ups">جهاز خازن طاقة (UPS)</option>
+                    <option value="network">أجهزة الشبكات (Switch/Router/Nano)</option>
+                </select>
             </div>
 
-            <div class="field">
-                <label>الإجراءات والحلول المنجزة</label>
-                <div id="actBox" class="checkbox-group"></div>
-            </div>
+            <label>الأعطال والتشخيص الفني:</label>
+            <div id="probBox" class="checkbox-grid field"></div>
 
-            <button class="btn btn-primary" id="saveBtn" onclick="saveToDB()">حفظ في الأرشيف المحلي</button>
+            <label>الإجراءات التقنية المنجزة:</label>
+            <div id="actBox" class="checkbox-grid field"></div>
+
+            <button class="btn-save" onclick="saveToDB()">حفظ في الأرشيف المحلي</button>
         </div>
     </div>
 
-    <div id="printable">
-        <div class="print-header">
-            <div style="text-align:right">
-                <strong style="font-size: 20px">شبكة الإعلام العراقي</strong><br>
-                مديرية تكنولوجيا المعلومات<br>
-                قسم الصيانة والدعم الفني
-            </div>
-            <img src="logo.png" style="width:120px; height:120px; object-fit:contain" onerror="this.style.display='none'">
-        </div>
-        
-        <h2 style="text-align:center; background:#f1f5f9; padding:15px; border:2px solid var(--dark); margin:40px 0">تقرير إنجاز مهمة فنية</h2>
-        
-        <table class="print-table">
-            <tr>
-                <td style="width: 50%"><strong>الجهة المستفيدة:</strong> <span id="v_dept"></span></td>
-                <td><strong>التاريخ:</strong> <span id="v_date"></span></td>
-            </tr>
-            <tr>
-                <td colspan="2"><strong>الفني المختص:</strong> <span id="v_tech"></span></td>
-            </tr>
-        </table>
-
-        <div class="print-section">
-            <h4>أولاً: التشخيص الفني للعطل</h4>
-            <div id="v_prob" class="print-box"></div>
-        </div>
-
-        <div class="print-section">
-            <h4>ثانياً: المعالجة والحلول المطبقة</h4>
-            <div id="v_act" class="print-box"></div>
-        </div>
-
-        <div style="margin-top:100px; display:flex; justify-content:space-between; text-align:center; font-weight:bold">
-            <div style="width: 30%; border-top: 2px solid #000; padding-top: 10px">توقيع الفني</div>
-            <div style="width: 30%; border-top: 2px solid #000; padding-top: 10px">مسؤول الشعبة</div>
-            <div style="width: 30%; border-top: 2px solid #000; padding-top: 10px">توقيع المستلم</div>
-        </div>
+    <div id="print-wrapper">
+        <div class="printable-half" id="copy-1"></div>
+        <div class="printable-half" id="copy-2"></div>
     </div>
 
     <script>
         let db;
-        const req = indexedDB.open("IMN_Modern_DB", 1);
+        const req = indexedDB.open("IMN_Full_Final_DB", 1);
         req.onupgradeneeded = e => { e.target.result.createObjectStore("reports", { keyPath: "id", autoIncrement: true }); };
         req.onsuccess = e => { db = e.target.result; renderArchive(); };
 
         const optionsBank = {
             pc: {
-                p: ["عطل اللوحة الام", "عطل الرام", "عطل الهارد دسك", "تلف البطارية", "انهيار الويندوز"],
-                a: ["استبدال HDD بـ SSD", "إضافة SSD", "إعادة تهيئة (Format)", "تثبيت ويندوز أصلية", "تنصيب البرامج الأساسية"]
-            },
-            ups: {
-                p: ["الجهاز لا يعمل", "عدم خزن الطاقة", "صوت تنبيه مستمر", "تلف المصهر"],
-                a: ["استبدال البطارية الداخلية", "تبديل المصهر", "صيانة الدائرة الكهربائية"]
+                p: ["عطل اللوحة الام (Motherboard)", "عطل الرام (RAM)", "عطل الهارد دسك (HDD/SSD)", "تلف البطارية الداخلية", "انهيار نظام التشغيل", "إصابة بفايروسات خبيثة", "بطء شديد في الأداء", "فشل الإقلاع (No Boot)"],
+                a: ["استبدال HDD بـ SSD", "إضافة SSD (ترقية)", "إعادة تهيئة (Format)", "تثبيت ويندوز أصلية", "تنصيب البرامج الأساسية", "تثبيت التعاريف الأصلية", "تحديثات الأمان للنظام", "تبديل معجون حراري وتنظيف"]
             },
             printer: {
-                p: ["حشر ورق", "بهتان الحبر", "عطل الفيوزر"],
-                a: ["تنظيف البكرات", "تبديل الحبر", "تعريف عبر الشبكة"]
+                p: ["حشر ورق متكرر", "بهتان الحبر / خطوط سوداء", "عطل الفيوزر (Fuser)", "تعذر التعريف على الشبكة", "تلف بكرات السحب", "مشكلة في السكنر"],
+                a: ["تنظيف البكرات", "تبديل خرطوشة الحبر", "تبديل الفيوزر", "تعريف عبر الشبكة IP", "صيانة الأجزاء الميكانيكية", "تصفير عداد الطابعة"]
+            },
+            ups: {
+                p: ["عدم خزن الطاقة (Battery Failure)", "الجهاز لا يعمل (Power Off)", "صوت تنبيه مستمر", "تلف المصهر (Fuse)", "احتراق اللوحة الداخلية"],
+                a: ["استبدال البطارية الداخلية", "تبديل المصهر (Fuse)", "صيانة الدائرة الكهربائية", "فحص جهد الخارج والداخل"]
+            },
+            network: {
+                p: ["انقطاع الاتصال (Link Down)", "ضعف الإشارة اللاسلكية", "تعارض عناوين IP", "تلف منفذ الشبكة", "فشل تسجيل الدخول للشبكة"],
+                a: ["إعادة كبس رؤوس RJ45", "ضبط إعدادات النانو / الأكسس", "تغيير مسار الكابل", "برمجة السويتش / الراوتر", "تحديث فريم وير الجهاز"]
             }
         };
 
@@ -277,8 +162,8 @@
             const aBox = document.getElementById('actBox');
             pBox.innerHTML = ''; aBox.innerHTML = '';
             if(optionsBank[type]) {
-                optionsBank[type].p.forEach(v => pBox.innerHTML += `<label class="check-item"><input type="checkbox" name="probs" value="${v}">${v}</label>`);
-                optionsBank[type].a.forEach(v => aBox.innerHTML += `<label class="check-item"><input type="checkbox" name="acts" value="${v}">${v}</label>`);
+                optionsBank[type].p.forEach(v => pBox.innerHTML += `<div class="check-item"><input type="checkbox" name="probs" value="${v}">${v}</div>`);
+                optionsBank[type].a.forEach(v => aBox.innerHTML += `<div class="check-item"><input type="checkbox" name="acts" value="${v}">${v}</div>`);
             }
         }
 
@@ -286,20 +171,16 @@
             const id = document.getElementById('reportId').value;
             const probs = Array.from(document.querySelectorAll('input[name="probs"]:checked')).map(c => c.value);
             const acts = Array.from(document.querySelectorAll('input[name="acts"]:checked')).map(c => c.value);
-            
             const data = {
                 dept: document.getElementById('dept').value,
-                tech: document.getElementById('technician').value,
-                type: document.getElementById('deviceType').value,
                 probs: probs.join(" - "),
                 acts: acts.join(" - "),
                 date: new Date().toLocaleDateString('ar-EG')
             };
-
             const tx = db.transaction("reports", "readwrite");
             const store = tx.objectStore("reports");
             if(id) { data.id = parseInt(id); store.put(data); } else { store.add(data); }
-            tx.oncomplete = () => { resetForm(); renderArchive(); };
+            tx.oncomplete = () => { resetForm(); renderArchive(); alert("تم الحفظ بنجاح"); };
         }
 
         function renderArchive() {
@@ -308,20 +189,43 @@
             list.innerHTML = '';
             db.transaction("reports").objectStore("reports").getAll().onsuccess = e => {
                 e.target.result.reverse().forEach(r => {
-                    if(r.dept.toLowerCase().includes(term) || r.tech.toLowerCase().includes(term)) {
-                        list.innerHTML += `
-                        <div class="report-card">
-                            <div onclick="editReport(${r.id})">
-                                <strong>${r.dept}</strong>
-                                <small>${r.date} | الفني: ${r.tech}</small>
-                            </div>
+                    if(r.dept.toLowerCase().includes(term)) {
+                        list.innerHTML += `<div class="report-card">
+                            <div onclick="editReport(${r.id})"><strong>${r.dept}</strong><br><small>${r.date}</small></div>
                             <div style="margin-top:10px">
-                                <button onclick="printReport(${r.id})" style="background:var(--primary); color:white; border:none; padding:5px 10px; border-radius:5px; font-size:11px; cursor:pointer">طباعة</button>
-                                <button onclick="deleteReport(${r.id})" style="background:var(--danger); color:white; border:none; padding:5px 10px; border-radius:5px; font-size:11px; cursor:pointer">حذف</button>
+                                <button onclick="preparePrint(${r.id})" style="background:var(--accent); color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer">طباعة مكررة</button>
+                                <button onclick="deleteReport(${r.id})" style="background:#e11d48; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer">حذف</button>
                             </div>
                         </div>`;
                     }
                 });
+            };
+        }
+
+        function preparePrint(id) {
+            db.transaction("reports").objectStore("reports").get(id).onsuccess = e => {
+                const r = e.target.result;
+                const html = `
+                    <div class="p-header">
+                        <div style="text-align:right"><strong>شبكة الإعلام العراقي</strong><br>مديرية تكنولوجيا المعلومات</div>
+                        <img src="logo.png" style="width:70px; height:70px; object-fit:contain" onerror="this.style.display='none'">
+                    </div>
+                    <h3 style="text-align:center; background:#f1f5f9; border:1px solid #000; padding:5px; margin:10px 0; font-size:14px">تقرير صيانة وإنجاز عمل فني</h3>
+                    <table class="p-table">
+                        <tr><td style="width:60%">الجهة المستفيدة: ${r.dept}</td><td>التاريخ: ${r.date}</td></tr>
+                    </table>
+                    <div style="font-size:11px; font-weight:bold; margin-top:5px">الأعطال المشخصة:</div>
+                    <div class="content-box">${r.probs}</div>
+                    <div style="font-size:11px; font-weight:bold; margin-top:5px">الإجراءات المنجزة:</div>
+                    <div class="content-box">${r.acts}</div>
+                    <div class="p-footer">
+                        <div style="border-top:1px solid #000; width:30%">الفني المختص</div>
+                        <div style="border-top:1px solid #000; width:30%">مسؤول الشعبة</div>
+                        <div style="border-top:1px solid #000; width:30%">توقيع المستلم</div>
+                    </div>`;
+                document.getElementById('copy-1').innerHTML = html;
+                document.getElementById('copy-2').innerHTML = html;
+                window.print();
             };
         }
 
@@ -330,37 +234,21 @@
                 const r = e.target.result;
                 document.getElementById('reportId').value = r.id;
                 document.getElementById('dept').value = r.dept;
-                document.getElementById('technician').value = r.tech;
-                document.getElementById('deviceType').value = r.type;
-                loadOptions();
                 document.getElementById('formTitle').innerText = "تعديل تقرير: " + r.dept;
             };
         }
 
         function deleteReport(id) {
-            if(confirm("هل تريد الحذف؟")) {
-                db.transaction("reports", "readwrite").objectStore("reports").delete(id).onsuccess = renderArchive;
-            }
-        }
-
-        function printReport(id) {
-            db.transaction("reports").objectStore("reports").get(id).onsuccess = e => {
-                const r = e.target.result;
-                document.getElementById('v_dept').innerText = r.dept;
-                document.getElementById('v_date').innerText = r.date;
-                document.getElementById('v_tech').innerText = r.tech;
-                document.getElementById('v_prob').innerText = r.probs;
-                document.getElementById('v_act').innerText = r.acts;
-                window.print();
-            };
+            if(confirm("حذف؟")) db.transaction("reports", "readwrite").objectStore("reports").delete(id).onsuccess = renderArchive;
         }
 
         function resetForm() {
             document.getElementById('reportId').value = '';
-            document.querySelectorAll('input, select').forEach(i => i.value = '');
+            document.getElementById('dept').value = '';
+            document.getElementById('deviceType').value = '';
             document.getElementById('probBox').innerHTML = '';
             document.getElementById('actBox').innerHTML = '';
-            document.getElementById('formTitle').innerText = "إدخال مهمة تقنية";
+            document.getElementById('formTitle').innerText = "إنجاز مهمة صيانة فنية";
         }
     </script>
 </body>
