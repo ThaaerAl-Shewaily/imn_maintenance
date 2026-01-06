@@ -1,8 +1,13 @@
+// **********************************************************
+// رابط الاتصال بقاعدة بيانات Google Sheets
+const API_URL = "https://script.google.com/macros/s/AKfycbwHo1zsnMUt94ixdOnRbdVAbO_v_BUV7SnRmgTmTbTltduddYeBDzX5crYhFg3AgruG/exec"; 
+// **********************************************************
+
 document.addEventListener('DOMContentLoaded', () => {
-    loadData();
+    loadData(); // جلب البيانات عند بدء التشغيل
     showSection('dashboard');
     
-    // تفعيل القائمة للموبايل
+    // تفعيل القائمة الجانبية للموبايل
     const menuToggle = document.getElementById("menu-toggle");
     if(menuToggle) {
         menuToggle.addEventListener("click", function() {
@@ -12,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /* -------------------------------------------------------------------------- */
-/* 1. قواعد البيانات (الهيكلية + المعرفة + الحلول)           */
+/* 1. البيانات الثابتة (المديريات + النظام الخبير)           */
 /* -------------------------------------------------------------------------- */
 
 const departments = [
@@ -28,7 +33,6 @@ const departments = [
     "معهد التدريب الإعلامي", "مديرية الخدمات والنقل", "مديرية أمن الشبكة"
 ];
 
-// قاعدة المعرفة (التشخيص)
 const expertLogic = {
     "حاسبة": {
         "بطيء": "تحقق من برامج بدء التشغيل، افحص الفيروسات، أو اقترح ترقية الهارد إلى SSD.",
@@ -59,55 +63,30 @@ const expertLogic = {
     }
 };
 
-// --- جديد: قاعدة بيانات الحلول والإجراءات الشائعة ---
 const commonSolutions = {
-    "حاسبة": [
-        "تمت فرمتة الحاسبة وتنصيب ويندوز 10 مع البرامج",
-        "تم تنظيف الجهاز من الغبار واستبدال المعجون الحراري",
-        "تم استبدال القرص الصلب التالف بـ SSD جديد",
-        "تم استبدال الرام (RAM) التالفة",
-        "تم تنصيب حزمة التعريفات كاملة",
-        "تم إزالة الفيروسات وتحديث النظام",
-        "تم صيانة مزود الطاقة (Power Supply)"
-    ],
-    "طابعة": [
-        "تم استبدال علبة الحبر (Toner)",
-        "تم إجراء تنظيف لرأس الطباعة (Head Cleaning)",
-        "تم إخراج الورق المحشور وتنظيف الرولات",
-        "تم تعريف الطابعة على حاسبة المستفيد",
-        "تم صيانة ساحبة الورق"
-    ],
-    "ups": [
-        "تم استبدال البطارية الداخلية (12V/7AH)",
-        "تم استبدال البطارية الداخلية (12V/9AH)",
-        "تم تبديل الفيوز الداخلي وتشغيل الجهاز",
-        "تم صيانة البورد الإلكتروني"
-    ],
-    "network": [
-        "تم إعادة توجيه النانو ستيشن وضبط الإشارة",
-        "تم استبدال كيبل الشبكة UTP",
-        "تم تغيير رأسية الكيبل (RJ45)",
-        "تم معالجة تضارب الآيبيات (IP Conflict)",
-        "تم استبدال جهاز السويتش (Switch)"
-    ]
+    "حاسبة": ["تمت فرمتة الحاسبة وتنصيب ويندوز 10", "تم تنظيف الجهاز واستبدال المعجون الحراري", "تم استبدال القرص الصلب بـ SSD", "تم استبدال الرام (RAM)", "تم تنصيب حزمة التعريفات", "تم إزالة الفيروسات", "تم صيانة مزود الطاقة (PSU)"],
+    "طابعة": ["تم استبدال علبة الحبر", "تم تنظيف رأس الطباعة", "تم إخراج الورق المحشور", "تم تعريف الطابعة", "تم صيانة ساحبة الورق"],
+    "ups": ["تم استبدال البطارية (12V/7AH)", "تم استبدال البطارية (12V/9AH)", "تم تبديل الفيوز الداخلي", "تم صيانة البورد الإلكتروني"],
+    "network": ["تم توجيه النانو ستيشن", "تم استبدال كيبل الشبكة", "تم تغيير رأسية الكيبل (RJ45)", "تم معالجة تضارب الآيبيات", "تم استبدال السويتش"]
 };
 
 /* -------------------------------------------------------------------------- */
-/* 2. إدارة الحالة                                             */
+/* 2. المتغيرات العامة                                         */
 /* -------------------------------------------------------------------------- */
 
-let tickets = JSON.parse(localStorage.getItem('imn_tickets')) || [];
+let tickets = []; // سيتم ملؤها من الشيت
 let technicians = JSON.parse(localStorage.getItem('imn_technicians')) || ["فني صيانة 1"]; 
 let myChartInstance = null;
 let editingTicketId = null;
 
 /* -------------------------------------------------------------------------- */
-/* 3. التوجيه                                                  */
+/* 3. التوجيه (Routing)                                        */
 /* -------------------------------------------------------------------------- */
 
 function showSection(sectionId) {
     if (sectionId !== 'new-ticket') editingTicketId = null;
     const contentDiv = document.getElementById('main-content');
+    
     document.querySelectorAll('.list-group-item').forEach(el => el.classList.remove('active'));
     const activeBtn = document.querySelector(`[onclick="showSection('${sectionId}')"]`);
     if(activeBtn) activeBtn.classList.add('active');
@@ -117,7 +96,42 @@ function showSection(sectionId) {
     else if (sectionId === 'archive') renderArchive(contentDiv);
 }
 
-// --- أ. لوحة المعلومات ---
+// --- دالة جلب البيانات (GET) ---
+async function loadData() {
+    const contentDiv = document.getElementById('main-content');
+    // مؤشر تحميل بسيط إذا كنا في لوحة المعلومات أو الأرشيف
+    const isDashboard = document.querySelector('[onclick="showSection(\'dashboard\')"]').classList.contains('active');
+    
+    if(isDashboard && contentDiv) {
+        contentDiv.innerHTML = '<div class="text-center mt-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">جاري الاتصال بالسجل المركزي...</p></div>';
+    }
+
+    try {
+        const response = await fetch(API_URL);
+        const data = await response.json();
+        
+        // التحقق من أن البيانات مصفوفة
+        if (Array.isArray(data)) {
+            tickets = data.reverse(); // الأحدث أولاً
+        }
+        
+        // تحديث العرض إذا كنا في لوحة المعلومات
+        if(isDashboard) {
+            renderDashboard(contentDiv);
+        }
+    } catch (error) {
+        console.error("Error loading data:", error);
+        // في حال الخطأ نعرض البيانات المحلية القديمة إن وجدت أو رسالة
+        if(isDashboard && contentDiv) {
+            contentDiv.innerHTML = `<div class="alert alert-warning text-center">فشل جلب البيانات من السيرفر. تأكد من الاتصال بالإنترنت.<br><small>${error}</small></div>`;
+        }
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 4. الوظائف الرئيسية (لوحة المعلومات، النموذج، الأرشيف)     */
+/* -------------------------------------------------------------------------- */
+
 function renderDashboard(container) {
     const total = tickets.length;
     const pending = tickets.filter(t => t.status === 'قيد الانتظار').length;
@@ -142,6 +156,7 @@ function renderChart() {
     if (!ctx) return;
     const deviceCounts = { 'حاسبة': 0, 'طابعة': 0, 'ups': 0, 'network': 0 };
     tickets.forEach(t => { if (deviceCounts[t.device] !== undefined) deviceCounts[t.device]++; });
+    
     if (myChartInstance) myChartInstance.destroy();
     if (typeof Chart !== 'undefined') {
         myChartInstance = new Chart(ctx, {
@@ -155,168 +170,116 @@ function renderChart() {
     }
 }
 
-// --- ب. نموذج البلاغ (مع القوائم الذكية للأعطال والحلول) ---
 function renderNewTicketForm(container) {
     let deptOptions = departments.map(d => `<option value="${d}">${d}</option>`).join('');
     let techOptions = technicians.map(t => `<option value="${t}">`).join('');
-
-    let formTitle = "تسجيل بلاغ صيانة جديد";
-    let btnText = "حفظ البلاغ";
-    let btnClass = "btn-primary";
-    let currentData = {};
-
-    if (editingTicketId) {
-        const t = tickets.find(x => x.id === editingTicketId);
-        if (t) {
-            currentData = t;
-            formTitle = `تعديل البلاغ رقم: ${t.id}`;
-            btnText = "حفظ التعديلات";
-            btnClass = "btn-warning text-dark";
-        }
-    }
-
+    
     container.innerHTML = `
-        <h2 class="mb-4">${formTitle}</h2>
+        <h2 class="mb-4">تسجيل بلاغ صيانة جديد</h2>
         <div class="card p-4 shadow-sm">
             <form id="ticketForm" onsubmit="saveTicket(event)">
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label">الجهة المستفيدة</label>
-                        <select class="form-select" id="dept" required>
-                            <option value="">-- اختر --</option>
-                            ${deptOptions}
-                        </select>
+                        <select class="form-select" id="dept" required><option value="">-- اختر --</option>${deptOptions}</select>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">نوع الجهاز</label>
                         <select class="form-select" id="deviceType" onchange="updateLists()" required>
-                            <option value="حاسبة">حاسبة (PC/Laptop)</option>
-                            <option value="طابعة">طابعة / سكنر</option>
-                            <option value="ups">جهاز UPS</option>
-                            <option value="network">أجهزة شبكات</option>
+                            <option value="حاسبة">حاسبة</option><option value="طابعة">طابعة</option>
+                            <option value="ups">UPS</option><option value="network">شبكات</option>
                         </select>
                     </div>
                 </div>
-                
                 <div class="mb-3">
-                    <label class="form-label">وصف العطل (اختر أو اكتب)</label>
-                    <input type="text" class="form-control" id="description" list="issues-list" onkeyup="checkExpert()" placeholder="مثال: شاشة زرقاء، بطيء..." required autocomplete="off">
+                    <label class="form-label">وصف العطل</label>
+                    <input type="text" class="form-control" id="description" list="issues-list" onkeyup="checkExpert()" required autocomplete="off">
                     <datalist id="issues-list"></datalist>
                     <div id="expertArea" class="expert-suggestion"></div>
                 </div>
-
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">الإجراء المتخذ (الحل)</label>
-                        <input type="text" class="form-control" id="action" list="solutions-list" placeholder="اختر حلاً أو اكتب تفاصيل..." autocomplete="off">
+                        <label class="form-label">الإجراء المتخذ</label>
+                        <input type="text" class="form-control" id="action" list="solutions-list" autocomplete="off">
                         <datalist id="solutions-list"></datalist>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">اسم الفني</label>
-                        <input type="text" class="form-control" id="technician" list="tech-list" placeholder="ابحث أو اكتب اسم جديد..." required autocomplete="off">
-                        <datalist id="tech-list">
-                            ${techOptions}
-                        </datalist>
+                        <input type="text" class="form-control" id="technician" list="tech-list" required autocomplete="off">
+                        <datalist id="tech-list">${techOptions}</datalist>
                     </div>
                 </div>
-                
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn ${btnClass} btn-lg flex-grow-1"><i class="fas fa-save"></i> ${btnText}</button>
-                    ${editingTicketId ? `<button type="button" class="btn btn-secondary btn-lg" onclick="cancelEdit()">إلغاء</button>` : ''}
+                <div class="d-grid">
+                    <button type="submit" id="saveBtn" class="btn btn-primary btn-lg"><i class="fas fa-paper-plane"></i> حفظ وإرسال للتدقيق</button>
                 </div>
             </form>
         </div>
     `;
-
-    // تعبئة البيانات عند التعديل
-    if (editingTicketId && currentData.id) {
-        document.getElementById('dept').value = currentData.dept;
-        document.getElementById('deviceType').value = currentData.device;
-        document.getElementById('description').value = currentData.desc;
-        document.getElementById('action').value = currentData.action === "لا يوجد" ? "" : currentData.action;
-        document.getElementById('technician').value = currentData.technician;
-    }
-    
-    // تحديث القوائم عند التحميل
     updateLists();
 }
 
-// دالة موحدة لتحديث قائمة الأعطال وقائمة الحلول بناءً على الجهاز
 function updateLists() {
     const type = document.getElementById('deviceType').value;
-    
-    // 1. تحديث قائمة الأعطال
     const issuesList = document.getElementById('issues-list');
-    issuesList.innerHTML = '';
-    if (expertLogic[type]) {
-        Object.keys(expertLogic[type]).forEach(key => {
-            const option = document.createElement('option');
-            option.value = key;
-            issuesList.appendChild(option);
-        });
-    }
-
-    // 2. تحديث قائمة الحلول (الجديدة)
     const solutionsList = document.getElementById('solutions-list');
-    solutionsList.innerHTML = '';
-    if (commonSolutions[type]) {
-        commonSolutions[type].forEach(solution => {
-            const option = document.createElement('option');
-            option.value = solution;
-            solutionsList.appendChild(option);
-        });
-    }
-
-    checkExpert(); // إعادة فحص الخبير
+    issuesList.innerHTML = ''; solutionsList.innerHTML = '';
+    
+    if (expertLogic[type]) Object.keys(expertLogic[type]).forEach(k => issuesList.innerHTML += `<option value="${k}">`);
+    if (commonSolutions[type]) commonSolutions[type].forEach(s => solutionsList.innerHTML += `<option value="${s}">`);
+    checkExpert();
 }
 
-function saveTicket(e) {
+// --- دالة الحفظ والإرسال (POST) ---
+async function saveTicket(e) {
     e.preventDefault();
-    const dept = document.getElementById('dept').value;
-    const device = document.getElementById('deviceType').value;
-    const desc = document.getElementById('description').value;
-    const actionVal = document.getElementById('action').value;
-    const techName = document.getElementById('technician').value.trim();
+    const saveBtn = document.getElementById('saveBtn');
     
-    if (techName && !technicians.includes(techName)) {
-        technicians.push(techName);
+    // تغيير حالة الزر لمنع التكرار
+    const originalBtnText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> جاري الإرسال للسيرفر...';
+    saveBtn.disabled = true;
+
+    const newTicket = {
+        id: Date.now(),
+        date: new Date().toLocaleDateString('ar-IQ'),
+        dept: document.getElementById('dept').value,
+        device: document.getElementById('deviceType').value,
+        desc: document.getElementById('description').value,
+        action: document.getElementById('action').value || "لا يوجد",
+        technician: document.getElementById('technician').value,
+        status: document.getElementById('action').value ? 'تم الإنجاز' : 'قيد الانتظار'
+    };
+    
+    // حفظ اسم الفني محلياً للمستقبل
+    if (!technicians.includes(newTicket.technician)) {
+        technicians.push(newTicket.technician);
         localStorage.setItem('imn_technicians', JSON.stringify(technicians));
     }
 
-    if (editingTicketId) {
-        const index = tickets.findIndex(t => t.id === editingTicketId);
-        if (index !== -1) {
-            tickets[index].dept = dept;
-            tickets[index].device = device;
-            tickets[index].desc = desc;
-            tickets[index].action = actionVal || "لا يوجد";
-            tickets[index].technician = techName;
-            tickets[index].status = actionVal ? 'تم الإنجاز' : 'قيد الانتظار';
-        }
-        alert('تم تعديل البيانات بنجاح ✅');
-        editingTicketId = null;
-    } else {
-        const newTicket = {
-            id: Date.now(),
-            date: new Date().toLocaleDateString('ar-IQ'),
-            dept: dept,
-            device: device,
-            desc: desc,
-            action: actionVal || "لا يوجد",
-            technician: techName,
-            status: actionVal ? 'تم الإنجاز' : 'قيد الانتظار'
-        };
-        tickets.unshift(newTicket);
-        alert('تم حفظ البلاغ في الأرشيف ✅');
-    }
+    try {
+        // الإرسال بطريقة no-cors (تطلق الطلب ولا تنتظر قراءة الرد لتجنب مشاكل المتصفح)
+        await fetch(API_URL, {
+            method: 'POST',
+            mode: 'no-cors', 
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newTicket)
+        });
 
-    localStorage.setItem('imn_tickets', JSON.stringify(tickets));
-    showSection('archive');
+        // بما أننا نستخدم no-cors، نفترض النجاح إذا لم يحدث خطأ في الشبكة
+        alert('✅ تم حفظ البيانات في السجل المركزي بنجاح!');
+        
+        // تحديث القائمة المحلية فوراً ليرى المستخدم النتيجة
+        tickets.unshift(newTicket);
+        showSection('archive');
+        
+    } catch (error) {
+        console.error("Error saving:", error);
+        alert("❌ حدث خطأ أثناء الاتصال بالسيرفر! يرجى المحاولة مجدداً.");
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = originalBtnText;
+    }
 }
 
-function cancelEdit() { editingTicketId = null; showSection('archive'); }
-
-// --- ج. الأرشيف والطباعة ---
 function renderArchive(container) {
     let rows = tickets.map(t => `
         <tr>
@@ -324,48 +287,23 @@ function renderArchive(container) {
             <td>${t.dept}</td>
             <td>${t.device}</td>
             <td class="text-truncate" style="max-width: 150px;">${t.desc}</td>
-            <td>${t.technician || '-'}</td>
+            <td>${t.technician}</td>
             <td><span class="badge ${t.status === 'تم الإنجاز' ? 'bg-success' : 'bg-warning'}">${t.status}</span></td>
-            <td>
-                <div class="btn-group" role="group">
-                    <button class="btn btn-sm btn-warning" onclick="editTicket(${t.id})" title="تعديل"><i class="fas fa-pen"></i></button>
-                    <button class="btn btn-sm btn-info text-white" onclick="printTicket(${t.id})" title="طباعة وصل"><i class="fas fa-print"></i></button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteTicket(${t.id})" title="حذف"><i class="fas fa-trash"></i></button>
-                </div>
-            </td>
+            <td><button class="btn btn-sm btn-info text-white" onclick="printTicket(${t.id})"><i class="fas fa-print"></i></button></td>
         </tr>
     `).join('');
 
     container.innerHTML = `
-        <h2 class="mb-4">أرشيف الصيانة</h2>
+        <h2 class="mb-4">أرشيف الصيانة المركزي</h2>
         <div class="card p-3 shadow-sm">
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>رقم الوصل</th>
-                            <th>الجهة</th>
-                            <th>الجهاز</th>
-                            <th>العطل</th>
-                            <th>الفني</th>
-                            <th>الحالة</th>
-                            <th>إجراءات</th>
-                        </tr>
-                    </thead>
-                    <tbody>${rows || '<tr><td colspan="7" class="text-center">لا توجد سجلات حالياً</td></tr>'}</tbody>
+                    <thead class="table-dark"><tr><th>رقم الوصل</th><th>الجهة</th><th>الجهاز</th><th>العطل</th><th>الفني</th><th>الحالة</th><th>طباعة</th></tr></thead>
+                    <tbody>${rows || '<tr><td colspan="7" class="text-center">جاري جلب البيانات من السجل...</td></tr>'}</tbody>
                 </table>
             </div>
         </div>
     `;
-}
-
-function editTicket(id) { editingTicketId = id; showSection('new-ticket'); }
-function deleteTicket(id) {
-    if(confirm('هل أنت متأكد من حذف هذا السجل نهائياً؟')) {
-        tickets = tickets.filter(t => t.id !== id);
-        localStorage.setItem('imn_tickets', JSON.stringify(tickets));
-        renderArchive(document.getElementById('main-content'));
-    }
 }
 
 function checkExpert() {
@@ -373,53 +311,24 @@ function checkExpert() {
     const desc = document.getElementById('description').value.toLowerCase();
     const expertDiv = document.getElementById('expertArea');
     let suggestions = [];
-    
-    let keys = expertLogic[type] || {};
-    for (const [key, solution] of Object.entries(keys)) {
-        if (desc.includes(key)) {
-            suggestions.push(solution);
+    if (expertLogic[type]) {
+        for (const [key, solution] of Object.entries(expertLogic[type])) {
+            if (desc.includes(key)) suggestions.push(solution);
         }
     }
-
-    if (suggestions.length > 0) {
-        expertDiv.innerHTML = "💡 <strong>اقتراح النظام الخبير:</strong> " + suggestions.join("<br>");
-        expertDiv.style.display = 'block';
-    } else {
-        expertDiv.style.display = 'none';
-    }
+    expertDiv.innerHTML = suggestions.length > 0 ? "💡 <strong>النظام الخبير:</strong> " + suggestions.join("<br>") : "";
+    expertDiv.style.display = suggestions.length > 0 ? 'block' : 'none';
 }
 
 function printTicket(id) {
-    const t = tickets.find(ticket => ticket.id === id);
+    const t = tickets.find(ticket => ticket.id == id);
     if (!t) return;
-    const printArea = document.getElementById('print-area');
-    printArea.innerHTML = `
+    document.getElementById('print-area').innerHTML = `
         <div class="receipt-box">
-            <div class="receipt-header">
-                <h2>شبكة الإعلام العراقي (IMN)</h2>
-                <h4>مديرية تكنولوجيا المعلومات / قسم الصيانة</h4>
-                <h5>استمارة صيانة ودعم فني</h5>
-            </div>
-            <div class="row mt-4" style="direction: rtl;">
-                <div class="col-6"><strong>رقم الوصل:</strong> ${t.id}</div>
-                <div class="col-6 text-start"><strong>التاريخ:</strong> ${t.date}</div>
-            </div>
-            <hr>
-            <div style="direction: rtl; text-align: right;">
-                <p><strong>الجهة المستفيدة:</strong> ${t.dept}</p>
-                <p><strong>نوع الجهاز:</strong> ${t.device}</p>
-                <p><strong>وصف العطل:</strong><br>${t.desc}</p>
-                <p><strong>الإجراء الفني المتخذ:</strong><br>${t.action}</p>
-            </div>
-            <hr>
-            <div class="row mt-5" style="direction: rtl;">
-                <div class="col-6 text-center"><p><strong>توقيع الفني المنفذ</strong></p><br><p>${t.technician}</p></div>
-                <div class="col-6 text-center"><p><strong>استلام الجهة المستفيدة</strong></p><br><p>.................................</p></div>
-            </div>
-            <div class="text-center mt-4 small text-muted">تم استخراج هذا الوصل آلياً من نظام الدعم الفني الذكي</div>
-        </div>
-    `;
+            <div class="receipt-header"><h2>شبكة الإعلام العراقي</h2><h4>النظام المركزي للعمليات التقنية</h4></div>
+            <div class="row mt-4" style="direction: rtl;"><div class="col-6"><strong>رقم الوصل:</strong> ${t.id}</div><div class="col-6 text-start"><strong>التاريخ:</strong> ${t.date}</div></div><hr>
+            <div style="direction: rtl; text-align: right;"><p><strong>الجهة:</strong> ${t.dept}</p><p><strong>الجهاز:</strong> ${t.device}</p><p><strong>العطل:</strong><br>${t.desc}</p><p><strong>الإجراء:</strong><br>${t.action}</p></div><hr>
+            <div class="row mt-5" style="direction: rtl;"><div class="col-6 text-center"><p><strong>الفني المنفذ</strong></p><br><p>${t.technician}</p></div><div class="col-6 text-center"><p><strong>استلام الجهة</strong></p><br><p>....................</p></div></div>
+        </div>`;
     window.print();
 }
-
-function loadData() { console.log("System Ready"); }
