@@ -1,10 +1,10 @@
 // **********************************************************
-// رابط الاتصال بقاعدة بيانات Google Sheets
-const API_URL = "https://script.google.com/macros/s/AKfycbwHo1zsnMUt94ixdOnRbdVAbO_v_BUV7SnRmgTmTbTltduddYeBDzX5crYhFg3AgruG/exec"; 
+// رابط الاتصال بقاعدة بيانات Google Sheets (API)
+const API_URL = "https://script.google.com/macros/s/AKfycbzEX0NqliSPUGjCgA_cBnPHpJdCTusGYzCIdJ58kG0vXrmTDsCH21VYv_Td4ZfKSfR9/exec"; 
 // **********************************************************
 
 document.addEventListener('DOMContentLoaded', () => {
-    loadData(); // جلب البيانات عند بدء التشغيل
+    loadData(); // جلب البيانات من السيرفر عند البدء
     showSection('dashboard');
     
     // تفعيل القائمة الجانبية للموبايل
@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /* -------------------------------------------------------------------------- */
-/* 1. البيانات الثابتة (المديريات + النظام الخبير)           */
+/* 1. قواعد البيانات الثابتة (المديريات + النظام الخبير + الحلول)            */
 /* -------------------------------------------------------------------------- */
 
 const departments = [
@@ -71,16 +71,16 @@ const commonSolutions = {
 };
 
 /* -------------------------------------------------------------------------- */
-/* 2. المتغيرات العامة                                         */
+/* 2. المتغيرات العامة وإدارة الحالة                                       */
 /* -------------------------------------------------------------------------- */
 
-let tickets = []; // سيتم ملؤها من الشيت
+let tickets = []; // البيانات القادمة من جوجل شيت
 let technicians = JSON.parse(localStorage.getItem('imn_technicians')) || ["فني صيانة 1"]; 
 let myChartInstance = null;
 let editingTicketId = null;
 
 /* -------------------------------------------------------------------------- */
-/* 3. التوجيه (Routing)                                        */
+/* 3. التوجيه (Routing)                                                    */
 /* -------------------------------------------------------------------------- */
 
 function showSection(sectionId) {
@@ -96,10 +96,9 @@ function showSection(sectionId) {
     else if (sectionId === 'archive') renderArchive(contentDiv);
 }
 
-// --- دالة جلب البيانات (GET) ---
+// --- دالة جلب البيانات من السيرفر ---
 async function loadData() {
     const contentDiv = document.getElementById('main-content');
-    // مؤشر تحميل بسيط إذا كنا في لوحة المعلومات أو الأرشيف
     const isDashboard = document.querySelector('[onclick="showSection(\'dashboard\')"]').classList.contains('active');
     
     if(isDashboard && contentDiv) {
@@ -110,28 +109,26 @@ async function loadData() {
         const response = await fetch(API_URL);
         const data = await response.json();
         
-        // التحقق من أن البيانات مصفوفة
         if (Array.isArray(data)) {
-            tickets = data.reverse(); // الأحدث أولاً
+            tickets = data.reverse(); // عرض الأحدث أولاً
         }
         
-        // تحديث العرض إذا كنا في لوحة المعلومات
         if(isDashboard) {
             renderDashboard(contentDiv);
         }
     } catch (error) {
         console.error("Error loading data:", error);
-        // في حال الخطأ نعرض البيانات المحلية القديمة إن وجدت أو رسالة
         if(isDashboard && contentDiv) {
-            contentDiv.innerHTML = `<div class="alert alert-warning text-center">فشل جلب البيانات من السيرفر. تأكد من الاتصال بالإنترنت.<br><small>${error}</small></div>`;
+            contentDiv.innerHTML = `<div class="alert alert-warning text-center">فشل جلب البيانات. تأكد من الإنترنت.<br><small>${error}</small></div>`;
         }
     }
 }
 
 /* -------------------------------------------------------------------------- */
-/* 4. الوظائف الرئيسية (لوحة المعلومات، النموذج، الأرشيف)     */
+/* 4. وظائف الواجهات (لوحة المعلومات، النموذج، الأرشيف)                     */
 /* -------------------------------------------------------------------------- */
 
+// --- أ. لوحة المعلومات ---
 function renderDashboard(container) {
     const total = tickets.length;
     const pending = tickets.filter(t => t.status === 'قيد الانتظار').length;
@@ -170,6 +167,7 @@ function renderChart() {
     }
 }
 
+// --- ب. نموذج البلاغ الجديد ---
 function renderNewTicketForm(container) {
     let deptOptions = departments.map(d => `<option value="${d}">${d}</option>`).join('');
     let techOptions = technicians.map(t => `<option value="${t}">`).join('');
@@ -229,12 +227,11 @@ function updateLists() {
     checkExpert();
 }
 
-// --- دالة الحفظ والإرسال (POST) ---
+// --- ج. حفظ وإرسال البيانات (POST) ---
 async function saveTicket(e) {
     e.preventDefault();
     const saveBtn = document.getElementById('saveBtn');
     
-    // تغيير حالة الزر لمنع التكرار
     const originalBtnText = saveBtn.innerHTML;
     saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> جاري الإرسال للسيرفر...';
     saveBtn.disabled = true;
@@ -250,14 +247,13 @@ async function saveTicket(e) {
         status: document.getElementById('action').value ? 'تم الإنجاز' : 'قيد الانتظار'
     };
     
-    // حفظ اسم الفني محلياً للمستقبل
+    // حفظ اسم الفني محلياً
     if (!technicians.includes(newTicket.technician)) {
         technicians.push(newTicket.technician);
         localStorage.setItem('imn_technicians', JSON.stringify(technicians));
     }
 
     try {
-        // الإرسال بطريقة no-cors (تطلق الطلب ولا تنتظر قراءة الرد لتجنب مشاكل المتصفح)
         await fetch(API_URL, {
             method: 'POST',
             mode: 'no-cors', 
@@ -265,21 +261,19 @@ async function saveTicket(e) {
             body: JSON.stringify(newTicket)
         });
 
-        // بما أننا نستخدم no-cors، نفترض النجاح إذا لم يحدث خطأ في الشبكة
         alert('✅ تم حفظ البيانات في السجل المركزي بنجاح!');
-        
-        // تحديث القائمة المحلية فوراً ليرى المستخدم النتيجة
         tickets.unshift(newTicket);
         showSection('archive');
         
     } catch (error) {
         console.error("Error saving:", error);
-        alert("❌ حدث خطأ أثناء الاتصال بالسيرفر! يرجى المحاولة مجدداً.");
+        alert("❌ حدث خطأ أثناء الاتصال بالسيرفر!");
         saveBtn.disabled = false;
         saveBtn.innerHTML = originalBtnText;
     }
 }
 
+// --- د. الأرشيف وتقارير PDF ---
 function renderArchive(container) {
     let rows = tickets.map(t => `
         <tr>
@@ -289,23 +283,40 @@ function renderArchive(container) {
             <td class="text-truncate" style="max-width: 150px;">${t.desc}</td>
             <td>${t.technician}</td>
             <td><span class="badge ${t.status === 'تم الإنجاز' ? 'bg-success' : 'bg-warning'}">${t.status}</span></td>
-            <td><button class="btn btn-sm btn-info text-white" onclick="printTicket(${t.id})"><i class="fas fa-print"></i></button></td>
+            <td>
+                <button class="btn btn-sm btn-info text-white" onclick="printTicket(${t.id})" title="طباعة وصل"><i class="fas fa-print"></i></button>
+            </td>
         </tr>
     `).join('');
 
     container.innerHTML = `
-        <h2 class="mb-4">أرشيف الصيانة المركزي</h2>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>أرشيف الصيانة المركزي</h2>
+            <button class="btn btn-dark" onclick="promptMonthlyReport()">
+                <i class="fas fa-file-pdf me-2"></i> استخراج تقرير شهري
+            </button>
+        </div>
+        
         <div class="card p-3 shadow-sm">
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
-                    <thead class="table-dark"><tr><th>رقم الوصل</th><th>الجهة</th><th>الجهاز</th><th>العطل</th><th>الفني</th><th>الحالة</th><th>طباعة</th></tr></thead>
-                    <tbody>${rows || '<tr><td colspan="7" class="text-center">جاري جلب البيانات من السجل...</td></tr>'}</tbody>
+                    <thead class="table-dark"><tr><th>رقم الوصل</th><th>الجهة</th><th>الجهاز</th><th>العطل</th><th>الفني</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+                    <tbody>${rows || '<tr><td colspan="7" class="text-center">جاري جلب البيانات...</td></tr>'}</tbody>
                 </table>
             </div>
         </div>
     `;
 }
 
+// دالة الحذف (محلية فقط حالياً)
+function deleteTicket(id) {
+    if(confirm('هل أنت متأكد من الحذف من العرض الحالي؟')) {
+        tickets = tickets.filter(t => t.id !== id);
+        renderArchive(document.getElementById('main-content'));
+    }
+}
+
+// --- هـ. دوال مساعدة والطباعة ---
 function checkExpert() {
     const type = document.getElementById('deviceType').value;
     const desc = document.getElementById('description').value.toLowerCase();
@@ -330,5 +341,81 @@ function printTicket(id) {
             <div style="direction: rtl; text-align: right;"><p><strong>الجهة:</strong> ${t.dept}</p><p><strong>الجهاز:</strong> ${t.device}</p><p><strong>العطل:</strong><br>${t.desc}</p><p><strong>الإجراء:</strong><br>${t.action}</p></div><hr>
             <div class="row mt-5" style="direction: rtl;"><div class="col-6 text-center"><p><strong>الفني المنفذ</strong></p><br><p>${t.technician}</p></div><div class="col-6 text-center"><p><strong>استلام الجهة</strong></p><br><p>....................</p></div></div>
         </div>`;
+    window.print();
+}
+
+// --- و. تقرير شهري A4 ---
+function promptMonthlyReport() {
+    const currentDate = new Date();
+    const input = prompt("أدخل الشهر والسنة للتقرير (مثال: 1/2026):", `${currentDate.getMonth() + 1}/${currentDate.getFullYear()}`);
+    if (input) {
+        const [m, y] = input.split('/');
+        if(m && y) generateMonthlyReport(parseInt(m), parseInt(y));
+        else alert("تنسيق التاريخ غير صحيح.");
+    }
+}
+
+function generateMonthlyReport(month, year) {
+    const monthlyTickets = tickets.filter(t => {
+        const date = new Date(t.id);
+        return (date.getMonth() + 1) === month && date.getFullYear() === year;
+    });
+
+    if (monthlyTickets.length === 0) {
+        alert(`لا توجد بيانات لشهر ${month}/${year}`);
+        return;
+    }
+
+    const total = monthlyTickets.length;
+    const completed = monthlyTickets.filter(t => t.status.includes('تم')).length;
+    const pending = total - completed;
+    
+    const rows = monthlyTickets.map((t, index) => `
+        <tr>
+            <td>${index + 1}</td>
+            <td>${t.date}</td>
+            <td>${t.dept}</td>
+            <td>${t.device}</td>
+            <td>${t.desc}</td>
+            <td>${t.action}</td>
+            <td>${t.technician}</td>
+            <td>${t.status}</td>
+        </tr>
+    `).join('');
+
+    const printArea = document.getElementById('print-area');
+    printArea.innerHTML = `
+        <div class="report-box" style="direction: rtl; padding: 20px;">
+            <div class="text-center mb-5">
+                <h4>شبكة الإعلام العراقي (IMN)</h4>
+                <h5>مديرية تكنولوجيا المعلومات / قسم الصيانة </h5>
+                <hr style="border-top: 2px solid #000;">
+                <h2 style="margin-top: 20px; text-decoration: underline;">تقرير الموقف الفني الشهري</h2>
+                <p>عن شهر: <strong>${month} / ${year}</strong></p>
+            </div>
+            <div style="border: 1px solid #000; padding: 15px; margin-bottom: 20px; display: flex; justify-content: space-around; background-color: #f8f9fa;">
+                <div><strong>المجموع:</strong> ${total}</div>
+                <div><strong>المنجز:</strong> ${completed}</div>
+                <div><strong>قيد الانتظار:</strong> ${pending}</div>
+            </div>
+            <table class="table table-bordered" style="width: 100%; border-collapse: collapse; text-align: right; font-size: 12px;">
+                <thead style="background-color: #e9ecef;">
+                    <tr>
+                        <th style="border: 1px solid #000;">ت</th><th style="border: 1px solid #000;">التاريخ</th>
+                        <th style="border: 1px solid #000;">الجهة</th><th style="border: 1px solid #000;">الجهاز</th>
+                        <th style="border: 1px solid #000;">العطل</th><th style="border: 1px solid #000;">الإجراء</th>
+                        <th style="border: 1px solid #000;">الفني</th><th style="border: 1px solid #000;">الموقف</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+            <div style="margin-top: 60px; display: flex; justify-content: space-between; text-align: center;">
+                <div style="width: 30%;"><p><strong>منظم التقرير</strong></p><br><br><p>.........................</p></div>
+                <div style="width: 30%;"><p><strong>مدير القسم</strong></p><br><br><p>.........................</p></div>
+                <div style="width: 30%;"><p><strong>مدير IT</strong></p><br><br><p>.........................</p></div>
+            </div>
+            <div style="text-align: center; margin-top: 30px; font-size: 10px; color: #666;">تم استخراج التقرير آلياً من النظام المركزي للعمليات التقنية</div>
+        </div>
+    `;
     window.print();
 }
